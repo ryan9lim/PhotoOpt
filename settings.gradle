@@ -1,3 +1,3 @@
-include ':app', ':openCVLibrary300', ':eyeTrackSample', ':app2', 'app3'
+include ':app', ':openCVLibrary300', ':eyeTrackSample', ':app2', 'app3', 'photo-demo'
 include ':OpenCV'
 include ':openCVSamplefacedetection'
