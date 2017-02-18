@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
 
             // Here is my questionable code
 
-            FaceDetector detector = new FaceDetector.Builder(context)
+            /*FaceDetector detector = new FaceDetector.Builder(context)
                     .setTrackingEnabled(false)
                     .setLandmarkType(FaceDetector.ALL_LANDMARKS)
                     .build();
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                     canvas.drawCircle(cx, cy, 10, paint);
                 }
             }
-            detector.release();
+            detector.release();*/
         }
         catch (Exception e)
         {
