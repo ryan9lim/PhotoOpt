@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config="main"><source path="C:\Users\Limmy\Dropbox\Backup\AndroidStudioProjects\PhotoShoot\OpenCV\src\main\shaders"/></dataSet><dataSet config="release"><source path="C:\Users\Limmy\Dropbox\Backup\AndroidStudioProjects\PhotoShoot\OpenCV\src\release\shaders"/></dataSet></merger>
+<merger version="3"><dataSet config="main"><source path="/Users/robertrtung/StudioProjects/PhotoOpt/OpenCV/src/main/shaders"/></dataSet><dataSet config="release"><source path="/Users/robertrtung/StudioProjects/PhotoOpt/OpenCV/src/release/shaders"/></dataSet></merger>
