@@ -1,4 +1,4 @@
-package com.hacknyu.photoshoot;
+package com.hacknyu.photoopt;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
