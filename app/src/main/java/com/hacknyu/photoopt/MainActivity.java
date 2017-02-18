@@ -13,9 +13,15 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.face.Face;
+import com.google.android.gms.vision.face.FaceDetector;
+import com.google.android.gms.vision.face.Landmark;
 
 import java.io.File;
 import java.io.IOException;
@@ -125,6 +131,24 @@ public class MainActivity extends AppCompatActivity {
                 bitmap=scaled;
             }
             imageView.setImageBitmap(bitmap);
+
+            // Here is my questionable code
+
+            FaceDetector detector = new FaceDetector.Builder(context)
+                    .setTrackingEnabled(false)
+                    .setLandmarkType(FaceDetector.ALL_LANDMARKS)
+                    .build();
+            Frame frame = new Frame.Builder().setBitmap(bitmap).build();
+            SparseArray<Face> faces = detector.detect(frame);
+            for (int i = 0; i < faces.size(); ++i) {
+                Face face = faces.valueAt(i);
+                for (Landmark landmark : face.getLandmarks()) {
+                    int cx = (int) (landmark.getPosition().x * scale);
+                    int cy = (int) (landmark.getPosition().y * scale);
+                    canvas.drawCircle(cx, cy, 10, paint);
+                }
+            }
+            detector.release();
         }
         catch (Exception e)
         {
