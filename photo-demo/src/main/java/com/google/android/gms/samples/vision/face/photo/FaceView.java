@@ -23,6 +23,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 
@@ -39,6 +40,7 @@ public class FaceView extends View {
     public FaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
+    private static final String TAG = "FaceView";
 
     /**
      * Sets the bitmap background and the associated face detections.
@@ -98,6 +100,15 @@ public class FaceView extends View {
                 int cy = (int) (landmark.getPosition().y * scale);
                 canvas.drawCircle(cx, cy, 10, paint);
             }
+
+            String leftEyeScore = "Probability of left eye open is " + face.getIsLeftEyeOpenProbability();
+            Log.v(TAG, leftEyeScore);
+
+            String rightEyeScore = "Probability of right eye open is " + face.getIsRightEyeOpenProbability();
+            Log.v(TAG, rightEyeScore);
+
+            String smileScore = "Probability of smiling is " + face.getIsSmilingProbability();
+            Log.v(TAG, smileScore);
         }
     }
 }
