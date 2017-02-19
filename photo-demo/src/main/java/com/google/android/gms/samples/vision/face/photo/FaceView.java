@@ -30,6 +30,10 @@ import android.view.View;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.Landmark;
 
+import org.rosuda.REngine.REXPMismatchException;
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
+
 import static com.google.android.gms.vision.face.Landmark.BOTTOM_MOUTH;
 import static com.google.android.gms.vision.face.Landmark.LEFT_CHEEK;
 import static com.google.android.gms.vision.face.Landmark.LEFT_EYE;
@@ -110,15 +114,96 @@ public class FaceView extends View {
                 canvas.drawCircle(cx, cy, 10, paint);
             }
 
-            String leftEyeScore = "Probability of left eye open is " + face.getIsLeftEyeOpenProbability();
-            // Log.v(TAG, leftEyeScore);
+            Landmark rightEye = null;
+            Landmark leftEye = null;
+            Landmark leftCheek = null;
+            Landmark rightCheek = null;
+            Landmark noseBase = null;
+            Landmark bottomMouth = null;
+            Landmark leftMouth = null;
+            Landmark rightMouth = null;
 
-            String rightEyeScore = "Probability of right eye open is " + face.getIsRightEyeOpenProbability();
-            // Log.v(TAG, rightEyeScore);
+            for (Landmark landmark : face.getLandmarks()) {
 
-            String smileScore = "Probability of smiling is " + face.getIsSmilingProbability();
-            // Log.v(TAG, smileScore);
+                switch (landmark.getType()) {
+                    case RIGHT_EYE:
+                        rightEye = landmark;
+                        break;
+                    case LEFT_EYE:
+                        leftEye = landmark;
+                        break;
+                    case LEFT_CHEEK:
+                        leftCheek = landmark;
+                        break;
+                    case RIGHT_CHEEK:
+                        rightCheek = landmark;
+                        break;
+                    case NOSE_BASE:
+                        noseBase = landmark;
+                        break;
+                    case BOTTOM_MOUTH:
+                        bottomMouth = landmark;
+                        break;
+                    case LEFT_MOUTH:
+                        leftMouth = landmark;
+                        break;
+                    case RIGHT_MOUTH:
+                        rightMouth = landmark;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            RConnection connection = null;
+
+            try {
+            /* Create a connection to Rserve instance running on default port
+             * 6311
+             */
+                connection = new RConnection();
+
+            /* Note four slashes (\\\\) in the path */
+                connection.eval("source('/Users/robertrtung/StudioProjects/PhotoOpt/Data/ScoreFace.R')");
+                double score = -1;
+                if(rightEye == null || leftEye == null) {
+                    score=connection.eval("scoreIt("+"NA" + "," +
+                            "NA" + "," +
+                            "NA" + "," +
+                            "NA" + "," +
+                            "NA" + "," +
+                            Float.toString(face.getIsLeftEyeOpenProbability()) + "," +
+                            Float.toString(face.getIsRightEyeOpenProbability()) + "," +
+                            Float.toString(face.getIsSmilingProbability()) +
+                            ")").asDouble();
+                } else {
+                    double eyeSize = dist(rightEye,leftEye);
+
+                    score=connection.eval("scoreIt("+Double.toString(dist(rightMouth,leftMouth)/eyeSize) + "," +
+                            Double.toString(dist(rightCheek,leftCheek)/eyeSize) + "," +
+                            Double.toString(dist(bottomMouth,noseBase)/eyeSize) + "," +
+                            Double.toString(dist(leftEye,leftCheek)/eyeSize) + "," +
+                            Double.toString(dist(rightEye,rightCheek)/eyeSize) + "," +
+                            Float.toString(face.getIsLeftEyeOpenProbability()) + "," +
+                            Float.toString(face.getIsRightEyeOpenProbability()) + "," +
+                            Float.toString(face.getIsSmilingProbability()) +
+                            ")").asDouble();
+                }
+                System.out.println("The score is=" + score);
+            } catch (RserveException e) {
+                e.printStackTrace();
+            } catch (REXPMismatchException e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    public double dist(Landmark one, Landmark two) {
+        if(one == null || two == null) {
+            return 0;
+        }
+
+        return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
     }
 }
 

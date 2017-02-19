@@ -24,4 +24,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:22.0.0'
     compile 'com.google.android.gms:play-services-vision:9.4.0+'
     compile files('/Users/robertrtung/StudioProjects/PhotoOpt/libs/opencsv-3.9.jar')
+    compile files('/Users/robertrtung/StudioProjects/PhotoOpt/libs/REngine.jar')
+    compile files('/Users/robertrtung/StudioProjects/PhotoOpt/libs/Rserve.jar')
 }

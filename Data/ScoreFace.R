@@ -55,4 +55,4 @@ scoreIt = function(mh, ch, mv, lc, rc, lo, ro, sm) {
 }
 
 # predict(modelFit, example2[, 1:8])
-# scoreIt(1,1,1,1,1,1,1,1)
+# scoreIt(1,0,1,1,1,1,1,1)
