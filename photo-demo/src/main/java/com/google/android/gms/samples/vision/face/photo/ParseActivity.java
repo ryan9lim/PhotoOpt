@@ -1,3 +1,4 @@
+/*
 package com.google.android.gms.samples.vision.face.photo;
 
 import android.Manifest;
@@ -18,7 +19,7 @@ import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 import com.google.android.gms.vision.face.Landmark;
-import com.opencsv.CSVWriter;
+// import com.opencsv.CSVWriter;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -328,3 +329,4 @@ public class ParseActivity extends Activity {
         return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
     }
 }
+*/

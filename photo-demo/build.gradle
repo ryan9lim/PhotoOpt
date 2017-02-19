@@ -24,5 +24,4 @@ dependencies {
     compile 'com.android.support:appcompat-v7:22.0.0'
     compile 'com.google.android.gms:play-services-vision:9.4.0+'
     compile 'com.github.wseemann:FFmpegMediaMetadataRetriever:1.0.1'
-    compile files('C:/Users/Limmy/Dropbox/Backup/AndroidStudioProjects/PhotoShoot/libs/opencsv-3.9.jar')
 }

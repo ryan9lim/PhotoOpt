@@ -1,6 +1,7 @@
 package com.google.android.gms.samples.vision.face.photo;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -11,6 +12,8 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -20,7 +23,7 @@ import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 import com.google.android.gms.vision.face.Landmark;
-import com.opencsv.CSVWriter;
+// import com.opencsv.CSVWriter;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -43,6 +46,7 @@ import static com.google.android.gms.vision.face.Landmark.RIGHT_MOUTH;
 public class DemoActivity extends Activity {
     ArrayList<String> filelist;
     ImageView imageView;
+    Button backToCamera;
     private static final String TAG = "DemoActivity";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +58,16 @@ public class DemoActivity extends Activity {
         Log.d(TAG,"Number of pictures: "+filelist.size());
         imageView = (ImageView) findViewById(R.id.output);
         grabImage();
+
+        backToCamera = (Button)findViewById(R.id.nextpicture);
+        backToCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(DemoActivity.this, CameraActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     public void grabImage(){

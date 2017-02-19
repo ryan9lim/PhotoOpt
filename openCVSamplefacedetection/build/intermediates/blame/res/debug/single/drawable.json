@@ -1,18 +1,6 @@
 [
     {
-        "merged": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\build\\intermediates\\res\\merged\\debug\\drawable\\icon.png",
-        "source": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\src\\main\\res\\drawable\\icon.png"
-    },
-    {
-        "merged": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\build\\intermediates\\res\\merged\\debug\\drawable\\icon.png",
-        "source": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\src\\main\\res\\drawable\\icon.png"
-    },
-    {
-        "merged": "C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\build\\intermediates\\res\\merged\\debug\\drawable\\icon.png",
-        "source": "C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\src\\main\\res\\drawable\\icon.png"
-    },
-    {
-        "merged": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\build\\intermediates\\res\\merged\\debug\\drawable\\icon.png",
-        "source": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\src\\main\\res\\drawable\\icon.png"
+        "merged": "/Users/robertrtung/StudioProjects/PhotoOpt/openCVSamplefacedetection/build/intermediates/res/merged/debug/drawable/icon.png",
+        "source": "/Users/robertrtung/StudioProjects/PhotoOpt/openCVSamplefacedetection/src/main/res/drawable/icon.png"
     }
 ]

@@ -9,4 +9,15 @@
         android:id="@+id/output"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical">
+        <Button
+            android:id="@+id/nextpicture"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Take New Pictures"/>
+    </LinearLayout>
 </RelativeLayout>
