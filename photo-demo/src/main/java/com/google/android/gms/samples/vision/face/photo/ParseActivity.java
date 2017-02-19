@@ -52,7 +52,7 @@ public class ParseActivity extends Activity {
 
         grabImages();
     }
-    public void grabImages() throws IOException
+    public void grabImages()
     {
         FaceDetector detector = new FaceDetector.Builder(getApplicationContext())
                 .setTrackingEnabled(false)
@@ -79,12 +79,17 @@ public class ParseActivity extends Activity {
             File f = new File(filePath );
             CSVWriter writer;
             // File exist
-            if(f.exists() && !f.isDirectory()){
-                FileWriter mFileWriter = new FileWriter(filePath, true);
-                writer = new CSVWriter(mFileWriter);
-            }
-            else {
-                writer = new CSVWriter(new FileWriter(filePath));
+            boolean writerFound = true;
+            try {
+                if (f.exists() && !f.isDirectory()) {
+                    FileWriter mFileWriter = new FileWriter(filePath, true);
+                    writer = new CSVWriter(mFileWriter);
+                } else {
+                    writer = new CSVWriter(new FileWriter(filePath));
+                }
+            } catch(IOException e) {
+                writerFound = false;
+                writer = null;
             }
 
             List<String[]> data = new ArrayList<String[]>();
@@ -139,16 +144,27 @@ public class ParseActivity extends Activity {
                         }
                     }
 
-                    double mouthSize = dist(rightMouth,leftMouth);
+                    if(rightEye == null || leftEye == null) {
+                        data.add(new String[] {"NA",
+                                "NA",
+                                "NA",
+                                "NA",
+                                "NA",
+                                Float.toString(face.getIsLeftEyeOpenProbability()),
+                                Float.toString(face.getIsRightEyeOpenProbability()),
+                                Float.toString(face.getIsSmilingProbability())});
+                    } else {
+                        double eyeSize = dist(rightEye,leftEye);
 
-                    data.add(new String[] {Double.toString(dist(rightEye,leftEye)/mouthSize),
-                            Double.toString(dist(rightCheek,leftCheek)/mouthSize),
-                            Double.toString(dist(bottomMouth,noseBase)/mouthSize),
-                            Double.toString(dist(leftEye,leftCheek)/mouthSize),
-                            Double.toString(dist(rightEye,rightCheek)/mouthSize),
-                            Float.toString(face.getIsLeftEyeOpenProbability()),
-                            Float.toString(face.getIsRightEyeOpenProbability()),
-                            Float.toString(face.getIsSmilingProbability())});
+                        data.add(new String[] {Double.toString(dist(rightEye,leftEye)/eyeSize),
+                                Double.toString(dist(rightCheek,leftCheek)/eyeSize),
+                                Double.toString(dist(bottomMouth,noseBase)/eyeSize),
+                                Double.toString(dist(leftEye,leftCheek)/eyeSize),
+                                Double.toString(dist(rightEye,rightCheek)/eyeSize),
+                                Float.toString(face.getIsLeftEyeOpenProbability()),
+                                Float.toString(face.getIsRightEyeOpenProbability()),
+                                Float.toString(face.getIsSmilingProbability())});
+                    }
 
                     String leftEyeScore = i + " Probability of left eye open is " + face.getIsLeftEyeOpenProbability();
                     Log.v(TAG, leftEyeScore);
@@ -159,16 +175,23 @@ public class ParseActivity extends Activity {
                     String smileScore = i + " Probability of smiling is " + face.getIsSmilingProbability();
                     Log.v(TAG, smileScore);
                 }
+                if(writerFound) {
+                    writer.writeAll(data);
 
-                writer.writeAll(data);
-
-                writer.close();
+                    writer.close();
+                }
             }
             catch (Exception e)
             {
                 Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "Failed to load", e);
-                writer.close();
+                if(writerFound) {
+                    try {
+                        writer.close();
+                    } catch(IOException e2) {
+                        System.err.println("Could not close writer");
+                    }
+                }
             }
         }
         for (int i = 1; i < 89; i++){
@@ -205,6 +228,10 @@ public class ParseActivity extends Activity {
     }
 
     public double dist(Landmark one, Landmark two) {
+        if(one == null || two == null) {
+            return 0;
+        }
+
         return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
     }
 }
