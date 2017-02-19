@@ -160,7 +160,10 @@ public class ParseActivity extends Activity {
                     }
 
                     if(rightEye == null || leftEye == null) {
-                        data.add(new String[] {"NA",
+                        data.add(new String[] {
+                                "good",
+                                Integer.toString(i),
+                                "NA",
                                 "NA",
                                 "NA",
                                 "NA",
@@ -171,7 +174,10 @@ public class ParseActivity extends Activity {
                     } else {
                         double eyeSize = dist(rightEye,leftEye);
 
-                        data.add(new String[] {Double.toString(dist(rightMouth,leftMouth)/eyeSize),
+                        data.add(new String[] {
+                                "good",
+                                Integer.toString(i),
+                                Double.toString(dist(rightMouth,leftMouth)/eyeSize),
                                 Double.toString(dist(rightCheek,leftCheek)/eyeSize),
                                 Double.toString(dist(bottomMouth,noseBase)/eyeSize),
                                 Double.toString(dist(leftEye,leftCheek)/eyeSize),
@@ -259,7 +265,10 @@ public class ParseActivity extends Activity {
                     }
 
                     if(rightEye == null || leftEye == null) {
-                        data.add(new String[] {"NA",
+                        data.add(new String[] {
+                                "bad",
+                                Integer.toString(i),
+                                "NA",
                                 "NA",
                                 "NA",
                                 "NA",
@@ -270,7 +279,10 @@ public class ParseActivity extends Activity {
                     } else {
                         double eyeSize = dist(rightEye,leftEye);
 
-                        data.add(new String[] {Double.toString(dist(rightMouth,leftMouth)/eyeSize),
+                        data.add(new String[] {
+                                "bad",
+                                Integer.toString(i),
+                                Double.toString(dist(rightMouth,leftMouth)/eyeSize),
                                 Double.toString(dist(rightCheek,leftCheek)/eyeSize),
                                 Double.toString(dist(bottomMouth,noseBase)/eyeSize),
                                 Double.toString(dist(leftEye,leftCheek)/eyeSize),
