@@ -1,6 +1,6 @@
 [
     {
-        "outputFile": "/Users/robertrtung/StudioProjects/PhotoOpt/C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values\\values.xml",
+        "outputFile": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values\\values.xml",
         "map": [
             {
                 "to": {
@@ -11,7 +11,7 @@
                     "endOffset": 396
                 },
                 "from": {
-                    "file": "/Users/robertrtung/StudioProjects/PhotoOpt/C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\src\\main\\res\\values\\strings.xml",
+                    "file": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\src\\main\\res\\values\\strings.xml",
                     "position": {
                         "startLine": 2,
                         "startColumn": 4,
@@ -24,7 +24,7 @@
         ]
     },
     {
-        "outputFile": "/Users/robertrtung/StudioProjects/PhotoOpt/C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values\\values.xml",
+        "outputFile": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values\\values.xml",
         "map": [
             {
                 "to": {
@@ -35,7 +35,7 @@
                     "endOffset": 396
                 },
                 "from": {
-                    "file": "/Users/robertrtung/StudioProjects/PhotoOpt/C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\src\\main\\res\\values\\strings.xml",
+                    "file": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\src\\main\\res\\values\\strings.xml",
                     "position": {
                         "startLine": 2,
                         "startColumn": 4,
@@ -48,7 +48,7 @@
         ]
     },
     {
-        "outputFile": "/Users/robertrtung/StudioProjects/PhotoOpt/openCVSamplefacedetection/build/intermediates/incremental/mergeDebugResources/merged.dir/values/values.xml",
+        "outputFile": "C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values\\values.xml",
         "map": [
             {
                 "to": {
@@ -59,7 +59,31 @@
                     "endOffset": 396
                 },
                 "from": {
-                    "file": "/Users/robertrtung/StudioProjects/PhotoOpt/openCVSamplefacedetection/src/main/res/values/strings.xml",
+                    "file": "C:\\Users\\Limmy\\Dropbox\\Backup\\AndroidStudioProjects\\PhotoShoot\\openCVSamplefacedetection\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 2,
+                        "startColumn": 4,
+                        "startOffset": 57,
+                        "endColumn": 55,
+                        "endOffset": 108
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "outputFile": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values\\values.xml",
+        "map": [
+            {
+                "to": {
+                    "startLine": 7,
+                    "startColumn": 4,
+                    "startOffset": 345,
+                    "endColumn": 55,
+                    "endOffset": 396
+                },
+                "from": {
+                    "file": "C:\\Users\\robertrtung\\StudioProjects\\PhotoOpt\\openCVSamplefacedetection\\src\\main\\res\\values\\strings.xml",
                     "position": {
                         "startLine": 2,
                         "startColumn": 4,

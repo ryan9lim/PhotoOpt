@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.google.android.gms.samples.vision.face.photo"
-        minSdkVersion 9
+        minSdkVersion 21
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
@@ -23,7 +23,6 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:22.0.0'
     compile 'com.google.android.gms:play-services-vision:9.4.0+'
-    compile files('/Users/robertrtung/StudioProjects/PhotoOpt/libs/opencsv-3.9.jar')
-    compile files('/Users/robertrtung/StudioProjects/PhotoOpt/libs/REngine.jar')
-    compile files('/Users/robertrtung/StudioProjects/PhotoOpt/libs/Rserve.jar')
+    compile 'com.github.wseemann:FFmpegMediaMetadataRetriever:1.0.1'
+    compile files('C:/Users/Limmy/Dropbox/Backup/AndroidStudioProjects/PhotoShoot/libs/opencsv-3.9.jar')
 }

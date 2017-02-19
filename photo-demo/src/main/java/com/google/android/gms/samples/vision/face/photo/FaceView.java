@@ -30,10 +30,6 @@ import android.view.View;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.Landmark;
 
-import org.rosuda.REngine.REXPMismatchException;
-import org.rosuda.REngine.Rserve.RConnection;
-import org.rosuda.REngine.Rserve.RserveException;
-
 import static com.google.android.gms.vision.face.Landmark.BOTTOM_MOUTH;
 import static com.google.android.gms.vision.face.Landmark.LEFT_CHEEK;
 import static com.google.android.gms.vision.face.Landmark.LEFT_EYE;
