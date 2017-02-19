@@ -111,13 +111,13 @@ public class FaceView extends View {
             }
 
             String leftEyeScore = "Probability of left eye open is " + face.getIsLeftEyeOpenProbability();
-            Log.v(TAG, leftEyeScore);
+            // Log.v(TAG, leftEyeScore);
 
             String rightEyeScore = "Probability of right eye open is " + face.getIsRightEyeOpenProbability();
-            Log.v(TAG, rightEyeScore);
+            // Log.v(TAG, rightEyeScore);
 
             String smileScore = "Probability of smiling is " + face.getIsSmilingProbability();
-            Log.v(TAG, smileScore);
+            // Log.v(TAG, smileScore);
         }
     }
 }

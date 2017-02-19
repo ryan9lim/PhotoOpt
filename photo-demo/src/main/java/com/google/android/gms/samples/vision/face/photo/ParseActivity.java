@@ -2,11 +2,13 @@ package com.google.android.gms.samples.vision.face.photo;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PointF;
 import android.os.Environment;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.util.SparseArray;
 import android.widget.Toast;
@@ -49,8 +51,21 @@ public class ParseActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parse);
-
+        verifyStoragePermissions(this);
         grabImages();
+    }
+    public static void verifyStoragePermissions(Activity activity) {
+        // Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
     }
     public void grabImages()
     {
@@ -65,32 +80,32 @@ public class ParseActivity extends Activity {
         // of the SafeFaceDetector class will patch the issue.
         Detector<Face> safeDetector = new SafeFaceDetector(detector);
 
+        // Set up filewriter
+
+        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+        String fileName = "AnalysisData.csv";
+        String filePath = baseDir + File.separator + fileName;
+        File f = new File(filePath );
+        CSVWriter writer;
+        // File exist
+        boolean writerFound = true;
+        try {
+            if (f.exists() && !f.isDirectory()) {
+                FileWriter mFileWriter = new FileWriter(filePath, true);
+                writer = new CSVWriter(mFileWriter);
+            } else {
+                writer = new CSVWriter(new FileWriter(filePath));
+            }
+        } catch(IOException e) {
+            writerFound = false;
+            writer = null;
+        }
+
         for (int i = 1; i < 91; i++){
             String photoPath = Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)+"/goodpic"+i+".jpg";
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             Bitmap bitmap = BitmapFactory.decodeFile(photoPath, options);
-
-            // Set up filewriter
-
-            String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-            String fileName = "AnalysisData.csv";
-            String filePath = baseDir + File.separator + fileName;
-            File f = new File(filePath );
-            CSVWriter writer;
-            // File exist
-            boolean writerFound = true;
-            try {
-                if (f.exists() && !f.isDirectory()) {
-                    FileWriter mFileWriter = new FileWriter(filePath, true);
-                    writer = new CSVWriter(mFileWriter);
-                } else {
-                    writer = new CSVWriter(new FileWriter(filePath));
-                }
-            } catch(IOException e) {
-                writerFound = false;
-                writer = null;
-            }
 
             List<String[]> data = new ArrayList<String[]>();
 
@@ -156,7 +171,7 @@ public class ParseActivity extends Activity {
                     } else {
                         double eyeSize = dist(rightEye,leftEye);
 
-                        data.add(new String[] {Double.toString(dist(rightEye,leftEye)/eyeSize),
+                        data.add(new String[] {Double.toString(dist(rightMouth,leftMouth)/eyeSize),
                                 Double.toString(dist(rightCheek,leftCheek)/eyeSize),
                                 Double.toString(dist(bottomMouth,noseBase)/eyeSize),
                                 Double.toString(dist(leftEye,leftCheek)/eyeSize),
@@ -177,21 +192,12 @@ public class ParseActivity extends Activity {
                 }
                 if(writerFound) {
                     writer.writeAll(data);
-
-                    writer.close();
                 }
             }
             catch (Exception e)
             {
-                Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Failed to load 1 " + i, Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "Failed to load", e);
-                if(writerFound) {
-                    try {
-                        writer.close();
-                    } catch(IOException e2) {
-                        System.err.println("Could not close writer");
-                    }
-                }
             }
         }
         for (int i = 1; i < 89; i++){
@@ -199,32 +205,108 @@ public class ParseActivity extends Activity {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             Bitmap bitmap = BitmapFactory.decodeFile(photoPath, options);
+
+            List<String[]> data = new ArrayList<String[]>();
+
             try
             {
                 // Create a frame from the bitmap and run face detection on the frame.
                 Frame frame = new Frame.Builder().setBitmap(bitmap).build();
                 SparseArray<Face> mFaces = safeDetector.detect(frame);
-                Log.v(TAG, Integer.toString(mFaces.size()));
+
                 for (int j = 0; j < mFaces.size(); ++j) {
                     Face face = mFaces.valueAt(j);
 
-                    String leftEyeScore = i+" Probability of left eye open is " + face.getIsLeftEyeOpenProbability();
+                    Landmark rightEye = null;
+                    Landmark leftEye = null;
+                    Landmark leftCheek = null;
+                    Landmark rightCheek = null;
+                    Landmark noseBase = null;
+                    Landmark bottomMouth = null;
+                    Landmark leftMouth = null;
+                    Landmark rightMouth = null;
+
+                    for (Landmark landmark : face.getLandmarks()) {
+
+                        switch (landmark.getType()) {
+                            case RIGHT_EYE:
+                                rightEye = landmark;
+                                break;
+                            case LEFT_EYE:
+                                leftEye = landmark;
+                                break;
+                            case LEFT_CHEEK:
+                                leftCheek = landmark;
+                                break;
+                            case RIGHT_CHEEK:
+                                rightCheek = landmark;
+                                break;
+                            case NOSE_BASE:
+                                noseBase = landmark;
+                                break;
+                            case BOTTOM_MOUTH:
+                                bottomMouth = landmark;
+                                break;
+                            case LEFT_MOUTH:
+                                leftMouth = landmark;
+                                break;
+                            case RIGHT_MOUTH:
+                                rightMouth = landmark;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    if(rightEye == null || leftEye == null) {
+                        data.add(new String[] {"NA",
+                                "NA",
+                                "NA",
+                                "NA",
+                                "NA",
+                                Float.toString(face.getIsLeftEyeOpenProbability()),
+                                Float.toString(face.getIsRightEyeOpenProbability()),
+                                Float.toString(face.getIsSmilingProbability())});
+                    } else {
+                        double eyeSize = dist(rightEye,leftEye);
+
+                        data.add(new String[] {Double.toString(dist(rightMouth,leftMouth)/eyeSize),
+                                Double.toString(dist(rightCheek,leftCheek)/eyeSize),
+                                Double.toString(dist(bottomMouth,noseBase)/eyeSize),
+                                Double.toString(dist(leftEye,leftCheek)/eyeSize),
+                                Double.toString(dist(rightEye,rightCheek)/eyeSize),
+                                Float.toString(face.getIsLeftEyeOpenProbability()),
+                                Float.toString(face.getIsRightEyeOpenProbability()),
+                                Float.toString(face.getIsSmilingProbability())});
+                    }
+
+                    String leftEyeScore = i + " Probability of left eye open is " + face.getIsLeftEyeOpenProbability();
                     Log.v(TAG, leftEyeScore);
 
-                    String rightEyeScore = i+" Probability of right eye open is " + face.getIsRightEyeOpenProbability();
+                    String rightEyeScore = i + " Probability of right eye open is " + face.getIsRightEyeOpenProbability();
                     Log.v(TAG, rightEyeScore);
 
-                    String smileScore = i+" Probability of smiling is " + face.getIsSmilingProbability();
+                    String smileScore = i + " Probability of smiling is " + face.getIsSmilingProbability();
                     Log.v(TAG, smileScore);
+                }
+                if(writerFound) {
+                    writer.writeAll(data);
                 }
             }
             catch (Exception e)
             {
-                Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Failed to load 2 " + i, Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "Failed to load", e);
             }
         }
         safeDetector.release();
+        if(writerFound) {
+            try {
+                writer.close();
+            } catch(IOException e2) {
+                System.err.println("Could not close writer");
+            }
+        }
     }
 
     public double dist(Landmark one, Landmark two) {
