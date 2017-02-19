@@ -30,6 +30,15 @@ import android.view.View;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.Landmark;
 
+import static com.google.android.gms.vision.face.Landmark.BOTTOM_MOUTH;
+import static com.google.android.gms.vision.face.Landmark.LEFT_CHEEK;
+import static com.google.android.gms.vision.face.Landmark.LEFT_EYE;
+import static com.google.android.gms.vision.face.Landmark.LEFT_MOUTH;
+import static com.google.android.gms.vision.face.Landmark.NOSE_BASE;
+import static com.google.android.gms.vision.face.Landmark.RIGHT_CHEEK;
+import static com.google.android.gms.vision.face.Landmark.RIGHT_EYE;
+import static com.google.android.gms.vision.face.Landmark.RIGHT_MOUTH;
+
 /**
  * View which displays a bitmap containing a face along with overlay graphics that identify the
  * locations of detected facial landmarks.
