@@ -155,15 +155,17 @@ public class FaceView extends View {
                 }
             }
 
-            RConnection connection = null;
+            if (face.getLandmarks().size() <= 0) {
+                // Score = -1 because no landmarks found
+                Log.d(TAG,"YOOOOOOOOO Score is: -1");
+                continue;
+            }
 
-            try {
-            /* Create a connection to Rserve instance running on default port
-             * 6311
-             */
-                connection = new RConnection();
+            // RConnection connection = null;
 
-            /* Note four slashes (\\\\) in the path */
+            /*try {
+            RConnection connection = new RConnection("172.30.20.6", 6311);
+
                 connection.eval("source('/Users/robertrtung/StudioProjects/PhotoOpt/Data/ScoreFace.R')");
                 double score = -1;
                 if(rightEye == null || leftEye == null) {
@@ -189,18 +191,90 @@ public class FaceView extends View {
                             Float.toString(face.getIsSmilingProbability()) +
                             ")").asDouble();
                 }
-                System.out.println("The score is=" + score);
+                Log.d(TAG,"YOOOOOOOOOOOOOOOOOOOOO The score is=" + score);
             } catch (RserveException e) {
                 e.printStackTrace();
             } catch (REXPMismatchException e) {
                 e.printStackTrace();
+            }*/
+            double score = -1;
+            double[] lm = {0.24293,-0.16650,0.01077};
+            double[] means = {0.8014056,1.1130010, 0.5566747, 0.4936905, 0.4792462, 0.8035098, 0.7082552, 0.2604325};
+            double[] pca1 = {-0.4570806, -0.4739974, -0.4124803, -0.1661393, -0.3926277, -0.1542638, -0.1628371, -0.4052058};
+            double[] pca2 = {0.07049220, -0.27247838, -0.07652864, -0.32021894, -0.29826944,  0.54186635, 0.58493271, 0.29607347};
+
+            double lo;
+            if(face.getIsLeftEyeOpenProbability() < 0) {
+                lo = means[5];
+            } else {
+                lo = face.getIsLeftEyeOpenProbability();
             }
+
+            double ro;
+            if(face.getIsRightEyeOpenProbability() < 0) {
+                ro = means[6];
+            } else {
+                ro = face.getIsRightEyeOpenProbability();
+            }
+
+            double sm;
+            if(face.getIsSmilingProbability() < 0) {
+                sm = means[7];
+            } else {
+                sm = face.getIsSmilingProbability();
+            }
+            if(rightEye == null || leftEye == null) {
+                // Use mean values if no ratios available
+                score = lm[0] + lm[1]*(pca1[0]*(means[0])+
+                        pca1[1]*(means[1])+
+                        pca1[2]*(means[2])+
+                        pca1[3]*(means[3])+
+                        pca1[4]*(means[4])+
+                        pca1[5]*(lo)+
+                        pca1[6]*(ro)+
+                        pca1[7]*(sm)) + lm[2]*(pca2[0]*(means[0])+
+                        pca2[1]*(means[1])+
+                        pca2[2]*(means[2])+
+                        pca2[3]*(means[3])+
+                        pca2[4]*(means[4])+
+                        pca2[5]*(lo)+
+                        pca2[6]*(ro)+
+                        pca2[7]*(sm));
+
+            } else {
+                double eyeSize = dist(rightEye,leftEye);
+                score = lm[0] + lm[1]*(pca1[0]*(dist(rightMouth,leftMouth,means,0)/eyeSize)+
+                        pca1[1]*(dist(rightCheek,leftCheek,means,1)/eyeSize)+
+                        pca1[2]*(dist(bottomMouth,noseBase,means,2)/eyeSize)+
+                        pca1[3]*(dist(leftEye,leftCheek,means,3)/eyeSize)+
+                        pca1[4]*(dist(rightEye,rightCheek,means,4)/eyeSize)+
+                        pca1[5]*(face.getIsLeftEyeOpenProbability())+
+                        pca1[6]*(face.getIsRightEyeOpenProbability())+
+                        pca1[7]*(face.getIsSmilingProbability())) + lm[2]*(pca2[0]*(dist(rightMouth,leftMouth,means,0)/eyeSize)+
+                        pca2[1]*(dist(rightCheek,leftCheek,means,1)/eyeSize)+
+                        pca2[2]*(dist(bottomMouth,noseBase,means,2)/eyeSize)+
+                        pca2[3]*(dist(leftEye,leftCheek,means,3)/eyeSize)+
+                        pca2[4]*(dist(rightEye,rightCheek,means,4)/eyeSize)+
+                        pca2[5]*(lo)+
+                        pca2[6]*(ro)+
+                        pca2[7]*(sm));
+            }
+
+            Log.d(TAG,"YOOOOOOOOO Score is: " + score);
         }
     }
 
     public double dist(Landmark one, Landmark two) {
         if(one == null || two == null) {
             return 0;
+        }
+
+        return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
+    }
+
+    public double dist(Landmark one, Landmark two, double[] means, int i) {
+        if(one == null || two == null) {
+            return means[i];
         }
 
         return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
