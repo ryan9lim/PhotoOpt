@@ -83,7 +83,7 @@ public class DemoActivity extends Activity {
         Detector<Face> safeDetector = new SafeFaceDetector(detector);
 
         double maxsumscore = 0;
-        String bestPhotoPath = filelist.get(1);
+        String bestPhotoPath = filelist.get(0);
         for (int i = 0; i < filelist.size(); i++) {
             Bitmap bitmap = null;
             double sumscore = 0;

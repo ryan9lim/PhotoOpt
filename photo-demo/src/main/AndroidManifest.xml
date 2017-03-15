@@ -16,8 +16,9 @@
     <application
         android:allowBackup="true"
         android:hardwareAccelerated="true"
-        android:icon="@drawable/icon"
-        android:label="FacePhotoDemo">
+        android:icon="@mipmap/ic_launcher"
+        android:label="PhotoOpt"
+        android:theme="@android:style/Theme.Black.NoTitleBar">
         <meta-data
             android:name="com.google.android.gms.vision.DEPENDENCIES"
             android:value="face" />
@@ -26,10 +27,11 @@
             android:name=".PhotoViewerActivity"
             android:icon="@drawable/icon"
             android:label="@string/title_activity_photo_viewer"
-            android:screenOrientation="fullSensor"
-            android:theme="@android:style/Theme.Black.NoTitleBar"></activity>
-        <activity android:name=".ParseActivity" />
-        <activity android:name=".CameraActivity">
+            android:screenOrientation="fullSensor"></activity>
+        <activity android:name=".CameraActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
