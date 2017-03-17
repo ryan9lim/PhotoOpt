@@ -21,20 +21,22 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:src="@drawable/ic_switch_camera"/>
-    <LinearLayout
-        android:layout_width="match_parent"
+    <Button
+        android:id="@+id/getpicture"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:orientation="vertical">
-        <Button
-            android:id="@+id/getpicture"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Record"/>
-        <Button
-            android:id="@+id/finish"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Find Best Image"/>
-    </LinearLayout>
+        android:layout_centerHorizontal="true"
+        android:text="Record"/>
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/switch_camera"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:text="@string/app_name"
+        android:textColor="@android:color/white"
+        android:textSize="24sp" />
 </RelativeLayout>

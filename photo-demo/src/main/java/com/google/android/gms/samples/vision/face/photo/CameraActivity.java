@@ -25,6 +25,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
@@ -39,11 +40,13 @@ import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
+import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.TextureView;
@@ -53,11 +56,20 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.google.android.gms.samples.vision.face.patch.SafeFaceDetector;
+import com.google.android.gms.vision.Detector;
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.face.Face;
+import com.google.android.gms.vision.face.FaceDetector;
+import com.google.android.gms.vision.face.Landmark;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -65,9 +77,24 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import static com.google.android.gms.vision.face.FaceDetector.ALL_CLASSIFICATIONS;
+import static com.google.android.gms.vision.face.Landmark.BOTTOM_MOUTH;
+import static com.google.android.gms.vision.face.Landmark.LEFT_CHEEK;
+import static com.google.android.gms.vision.face.Landmark.LEFT_EYE;
+import static com.google.android.gms.vision.face.Landmark.LEFT_MOUTH;
+import static com.google.android.gms.vision.face.Landmark.NOSE_BASE;
+import static com.google.android.gms.vision.face.Landmark.RIGHT_CHEEK;
+import static com.google.android.gms.vision.face.Landmark.RIGHT_EYE;
+import static com.google.android.gms.vision.face.Landmark.RIGHT_MOUTH;
 
 public class CameraActivity extends Activity {
 
@@ -93,7 +120,7 @@ public class CameraActivity extends Activity {
      */
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
-    final ArrayList<String> filenames = new ArrayList<>();
+    final ConcurrentHashMap<String,Double> mImageScores = new ConcurrentHashMap<>();
     private static String[] PERMISSIONS_CAMERA = {
             Manifest.permission.CAMERA
     };
@@ -139,6 +166,10 @@ public class CameraActivity extends Activity {
      * Orientation of the camera sensor
      */
     private int mSensorOrientation;
+
+    ExecutorService taskExecutor;
+
+    Detector<Face> safeDetector;
 
     private OrientationEventListener orientationListener = null;
     private boolean mTakePhoto = false;
@@ -206,33 +237,68 @@ public class CameraActivity extends Activity {
                 switchCamera();
             }
         });
-        finish = (Button)findViewById(R.id.finish);
-        getpicture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mTakePhoto = true;
+
+        getpicture.setOnTouchListener(new View.OnTouchListener() {
+
+            private Handler mHandler;
+
+            @Override public boolean onTouch(View v, MotionEvent event) {
+                switch(event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        if (mHandler != null) return true;
+                        mHandler = new Handler();
+                        mHandler.post(mAction);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        if (mHandler == null) return true;
+                        mHandler.removeCallbacks(mAction);
+                        mHandler = null;
+                        taskExecutor.shutdown();
+                        try {
+                            taskExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        Intent intent = new Intent(CameraActivity.this, DemoActivity.class);
+                        intent.putExtra("image_scores",mImageScores);
+                        startActivity(intent);
+                        finish();
+                        break;
+                }
+                return false;
             }
-        });
-        finish.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(CameraActivity.this, DemoActivity.class);
-                intent.putExtra("filenames", filenames);
-                startActivity(intent);
-                finish();
-            }
+
+            Runnable mAction = new Runnable() {
+                @Override public void run() {
+                    mTakePhoto = true;
+                    mHandler.postDelayed(this, 1000);
+                }
+            };
+
         });
         orientationListener = new OrientationEventListener(this) {
             public void onOrientationChanged(int orientation) {
                 configureTransform(textureView.getWidth(),textureView.getHeight());
             }
         };
+        taskExecutor = Executors.newSingleThreadExecutor();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         startBackgroundThread();
+        FaceDetector detector = new FaceDetector.Builder(getApplicationContext())
+                .setMode(FaceDetector.FAST_MODE)
+                .setLandmarkType(FaceDetector.ALL_LANDMARKS)
+                .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
+                .setTrackingEnabled(false)
+                .build();
+
+        // This is a temporary workaround for a bug in the face detector with respect to operating
+        // on very small images.  This will be fixed in a future release.  But in the near term, use
+        // of the SafeFaceDetector class will patch the issue.
+        safeDetector = new SafeFaceDetector(detector);
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
@@ -248,6 +314,7 @@ public class CameraActivity extends Activity {
     public void onPause() {
         closeCamera();
         stopBackgroundThread();
+        safeDetector.release();
         super.onPause();
     }
 
@@ -297,7 +364,8 @@ public class CameraActivity extends Activity {
     }
     public static void verifyStoragePermissions(Activity activity) {
         // Check if we have write permission
-        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.READ_EXTERNAL_STORAGE);
+        int permission = ActivityCompat.checkSelfPermission(activity,
+                Manifest.permission.READ_EXTERNAL_STORAGE);
 
         if (permission != PackageManager.PERMISSION_GRANTED) {
             // We don't have permission so prompt the user
@@ -412,17 +480,20 @@ public class CameraActivity extends Activity {
                             }
                             return;
                         }
-                        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmssSSS").format(new Date());
                         String imageFileName = "JPEG_" + timeStamp + ".jpg";
                         File photo = new File(Environment.getExternalStoragePublicDirectory(
                                 Environment.DIRECTORY_DOWNLOADS), imageFileName);
-                        mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), photo));
+                        boolean faceFront = cameraFace == CameraCharacteristics.LENS_FACING_FRONT;
                         String currentPhotoPath = photo.getAbsolutePath();
-                        filenames.add(currentPhotoPath);
+                        mImageScores.put(currentPhotoPath,0.0);
+                        mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), photo,
+                                safeDetector, faceFront, mImageScores, taskExecutor));
                         mTakePhoto = false;
                     }
                 };
-                mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 1);
+                mImageReader = ImageReader.newInstance(largest.getWidth(),
+                        largest.getHeight(), ImageFormat.JPEG, 1);
                 mImageReader.setOnImageAvailableListener(imageAvailableListener, mBackgroundHandler);
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
@@ -486,6 +557,7 @@ public class CameraActivity extends Activity {
                             mPreviewSize.getHeight(), mPreviewSize.getWidth());
                 }
 
+
                 this.cameraId = cameraId;
                 return;
             }
@@ -525,7 +597,8 @@ public class CameraActivity extends Activity {
         textureView.setTransform(matrix);
     }
     private static Size chooseOptimalSize(Size[] choices, int textureViewWidth,
-                                          int textureViewHeight, int maxWidth, int maxHeight, Size aspectRatio) {
+                                          int textureViewHeight, int maxWidth,
+                                          int maxHeight, Size aspectRatio) {
 
         // Collect the supported resolutions that are at least as big as the preview Surface
         List<Size> bigEnough = new ArrayList<>();
@@ -579,7 +652,6 @@ public class CameraActivity extends Activity {
             texture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
             Surface surface = new Surface(texture);
             previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-
             previewBuilder.addTarget(surface);
             previewBuilder.addTarget(mImageReader.getSurface());
             cameraDevice.createCaptureSession(Arrays.asList(surface,mImageReader.getSurface()),
@@ -636,10 +708,28 @@ public class CameraActivity extends Activity {
          * The file we save the image into.
          */
         private final File mFile;
+        /**
+         * Reference to a Context
+         */
+        private final Detector<Face> mSafeDetector;
 
-        public ImageSaver(Image image, File file) {
+        /**
+         * Reference to the score ArrayList
+         */
+        private final Map<String,Double> mImageScores;
+
+        private final ExecutorService mTaskExecutor;
+
+        boolean mFaceFront;
+
+        public ImageSaver(Image image, File file, Detector<Face> safeDetector, boolean faceFront,
+                          Map<String,Double> imageScores, ExecutorService taskExecutor) {
             mImage = image;
             mFile = file;
+            mSafeDetector = safeDetector;
+            mFaceFront = faceFront;
+            mImageScores = imageScores;
+            mTaskExecutor = taskExecutor;
         }
 
         @Override
@@ -652,6 +742,18 @@ public class CameraActivity extends Activity {
             try {
                 output = new FileOutputStream(mFile);
                 output.write(bytes);
+
+                // write to EXIF header
+                // TODO: 3/14/2017 temporary solution
+                ExifInterface exif = new ExifInterface(mFile.getAbsolutePath());
+                if (mFaceFront) {
+                    exif.setAttribute(ExifInterface.TAG_ORIENTATION,
+                            String.valueOf(ExifInterface.ORIENTATION_ROTATE_270));
+                } else{
+                    exif.setAttribute(ExifInterface.TAG_ORIENTATION,
+                            String.valueOf(ExifInterface.ORIENTATION_ROTATE_90));
+                }
+                exif.saveAttributes();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
@@ -664,6 +766,229 @@ public class CameraActivity extends Activity {
                     }
                 }
             }
+
+            mTaskExecutor.submit(new ImageAnalyzer(mFile.getAbsolutePath(),
+                    mSafeDetector, mImageScores));
+        }
+    }
+    /**
+     * Analyzes bitmaps for faces.
+     */
+    private static class ImageAnalyzer implements Runnable {
+        /**
+         * The file we save the image into.
+         */
+        private final String mFilepath;
+        /**
+         * Reference to a Context
+         */
+        private final Detector<Face> mSafeDetector;
+
+        /**
+         * Reference to the score ArrayList
+         */
+        private final Map<String,Double> mImageScores;
+
+        public ImageAnalyzer(String filepath, Detector<Face> safeDetector,
+                             Map<String,Double> imageScores) {
+            mFilepath = filepath;
+            mSafeDetector = safeDetector;
+            mImageScores = imageScores;
+        }
+
+        @Override
+        public void run() {
+
+            Log.d(TAG,mFilepath);
+            Bitmap bitmap = null;
+            double sumscore = 0;
+            try {
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inJustDecodeBounds = false;
+                bitmap = BitmapFactory.decodeFile(mFilepath, options);
+
+                // rotate image based on EXIF header
+                Bitmap newBitmap = checkImageRotation(mFilepath,bitmap);
+                bitmap.recycle();
+                bitmap = newBitmap;
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+            try {
+            Log.d(TAG,mFilepath);
+                // Create a frame from the bitmap and run face detection on the frame.
+                Frame frame = new Frame.Builder().setBitmap(bitmap).build();
+                SparseArray<Face> mFaces = mSafeDetector.detect(frame);
+                bitmap.recycle();
+
+                for (int j = 0; j < mFaces.size(); ++j) {
+                    Face face = mFaces.valueAt(j);
+
+                    Landmark rightEye = null;
+                    Landmark leftEye = null;
+                    Landmark leftCheek = null;
+                    Landmark rightCheek = null;
+                    Landmark noseBase = null;
+                    Landmark bottomMouth = null;
+                    Landmark leftMouth = null;
+                    Landmark rightMouth = null;
+
+                    for (Landmark landmark : face.getLandmarks()) {
+
+                        switch (landmark.getType()) {
+                            case RIGHT_EYE:
+                                rightEye = landmark;
+                                break;
+                            case LEFT_EYE:
+                                leftEye = landmark;
+                                break;
+                            case LEFT_CHEEK:
+                                leftCheek = landmark;
+                                break;
+                            case RIGHT_CHEEK:
+                                rightCheek = landmark;
+                                break;
+                            case NOSE_BASE:
+                                noseBase = landmark;
+                                break;
+                            case BOTTOM_MOUTH:
+                                bottomMouth = landmark;
+                                break;
+                            case LEFT_MOUTH:
+                                leftMouth = landmark;
+                                break;
+                            case RIGHT_MOUTH:
+                                rightMouth = landmark;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    double score;
+                    double[] lm = {0.24293,-0.16650,0.01077};
+                    double[] means = {0.8014056,1.1130010, 0.5566747, 0.4936905, 0.4792462, 0.8035098, 0.7082552, 0.2604325};
+                    double[] pca1 = {-0.4570806, -0.4739974, -0.4124803, -0.1661393, -0.3926277, -0.1542638, -0.1628371, -0.4052058};
+                    double[] pca2 = {0.07049220, -0.27247838, -0.07652864, -0.32021894, -0.29826944,  0.54186635, 0.58493271, 0.29607347};
+
+                    double lo;
+                    if(face.getIsLeftEyeOpenProbability() < 0) {
+                        lo = means[5];
+                    } else {
+                        lo = face.getIsLeftEyeOpenProbability();
+                    }
+
+                    double ro;
+                    if(face.getIsRightEyeOpenProbability() < 0) {
+                        ro = means[6];
+                    } else {
+                        ro = face.getIsRightEyeOpenProbability();
+                    }
+
+                    double sm;
+                    if(face.getIsSmilingProbability() < 0) {
+                        sm = means[7];
+                    } else {
+                        sm = face.getIsSmilingProbability();
+                    }
+                    if(rightEye == null || leftEye == null) {
+                        // Use mean values if no ratios available
+                        score = lm[0] + lm[1]*(pca1[0]*(means[0])+
+                                pca1[1]*(means[1])+
+                                pca1[2]*(means[2])+
+                                pca1[3]*(means[3])+
+                                pca1[4]*(means[4])+
+                                pca1[5]*(lo)+
+                                pca1[6]*(ro)+
+                                pca1[7]*(sm)) + lm[2]*(pca2[0]*(means[0])+
+                                pca2[1]*(means[1])+
+                                pca2[2]*(means[2])+
+                                pca2[3]*(means[3])+
+                                pca2[4]*(means[4])+
+                                pca2[5]*(lo)+
+                                pca2[6]*(ro)+
+                                pca2[7]*(sm));
+
+                    } else {
+                        double eyeSize = dist(rightEye,leftEye);
+                        score = lm[0] + lm[1]*(pca1[0]*(dist(rightMouth,leftMouth,means,0)/eyeSize)+
+                                pca1[1]*(dist(rightCheek,leftCheek,means,1)/eyeSize)+
+                                pca1[2]*(dist(bottomMouth,noseBase,means,2)/eyeSize)+
+                                pca1[3]*(dist(leftEye,leftCheek,means,3)/eyeSize)+
+                                pca1[4]*(dist(rightEye,rightCheek,means,4)/eyeSize)+
+                                pca1[5]*(face.getIsLeftEyeOpenProbability())+
+                                pca1[6]*(face.getIsRightEyeOpenProbability())+
+                                pca1[7]*(face.getIsSmilingProbability())) + lm[2]*(pca2[0]*(dist(rightMouth,leftMouth,means,0)/eyeSize)+
+                                pca2[1]*(dist(rightCheek,leftCheek,means,1)/eyeSize)+
+                                pca2[2]*(dist(bottomMouth,noseBase,means,2)/eyeSize)+
+                                pca2[3]*(dist(leftEye,leftCheek,means,3)/eyeSize)+
+                                pca2[4]*(dist(rightEye,rightCheek,means,4)/eyeSize)+
+                                pca2[5]*(lo)+
+                                pca2[6]*(ro)+
+                                pca2[7]*(sm));
+                    }
+                    Log.d(TAG,"Score is: " + score);
+                    sumscore += score;
+                }
+                mImageScores.put(mFilepath,sumscore);
+            }
+            catch (Exception e) {
+                Log.d(TAG, "Failed to load", e);
+            }
+            Log.d(TAG,"Total Score is: " + sumscore + " for "+mFilepath);
+        }
+        public static Bitmap checkImageRotation (String path,Bitmap bitmap){
+            try {
+                ExifInterface ei = new ExifInterface(path);
+                int orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL);
+                switch (orientation) {
+                    case ExifInterface.ORIENTATION_ROTATE_90:
+                        bitmap = rotateScaledImage(bitmap, 90);
+                        break;
+
+                    case ExifInterface.ORIENTATION_ROTATE_180:
+                        bitmap = rotateScaledImage(bitmap, 180);
+                        break;
+
+                    case ExifInterface.ORIENTATION_ROTATE_270:
+                        bitmap = rotateScaledImage(bitmap, 270);
+                        break;
+
+                    case ExifInterface.ORIENTATION_NORMAL:
+                        bitmap = rotateScaledImage(bitmap, 0);
+
+                    default:
+                        break;
+                }
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+            return bitmap;
+        }
+        public static Bitmap rotateScaledImage(Bitmap source, float angle) {
+            Matrix matrix = new Matrix();
+            matrix.postRotate(angle);
+            Bitmap newBitmap = Bitmap.createScaledBitmap(source, 640,
+                    480, true);
+            return Bitmap.createBitmap(newBitmap, 0, 0, newBitmap.getWidth(), newBitmap.getHeight(),
+                    matrix, true);
+        }
+
+        public double dist(Landmark one, Landmark two) {
+            if(one == null || two == null) {
+                return 0;
+            }
+
+            return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
+        }
+
+        public double dist(Landmark one, Landmark two, double[] means, int i) {
+            if(one == null || two == null) {
+                return means[i];
+            }
+
+            return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
         }
     }
 }
