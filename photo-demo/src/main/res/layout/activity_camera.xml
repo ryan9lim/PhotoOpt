@@ -23,11 +23,13 @@
         android:src="@drawable/ic_switch_camera"/>
     <Button
         android:id="@+id/getpicture"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="16dp"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:text="Record"/>
+        android:gravity="center_vertical|center_horizontal"
+        android:background="@drawable/button_record"/>
     <TextView
         android:id="@+id/title"
         android:layout_width="wrap_content"
@@ -39,4 +41,10 @@
         android:text="@string/app_name"
         android:textColor="@android:color/white"
         android:textSize="24sp" />
+    <ImageView
+        android:id="@+id/loading"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_centerInParent="true"
+        android:visibility="gone"/>
 </RelativeLayout>

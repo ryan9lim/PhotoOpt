@@ -16,6 +16,7 @@ import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.AnimationDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -30,6 +31,7 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -54,6 +56,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.gms.samples.vision.face.patch.SafeFaceDetector;
@@ -98,32 +101,59 @@ import static com.google.android.gms.vision.face.Landmark.RIGHT_MOUTH;
 
 public class CameraActivity extends Activity {
 
+    /**
+     * Tag for the {@link Log}
+     */
     private static final String TAG = "CameraActivity";
-    private Size mPreviewSize;
-    private Size mVideoSize;
-    private Size jpegSizes[]=null;
+
+    /* ----- UI ----- */
+
+    /**
+     * An {@link AnimationDrawable} for loading.
+     */
+    private AnimationDrawable loadingAnimation;
+    private ImageView loadingView;
+    private ImageButton switchCameraButton;
+    private Button getpicture;
+
+    /**
+     * An {@link AutoFitTextureView} for camera preview.
+     */
     private AutoFitTextureView textureView;
+
+
+    /* ----- Camera Objects ----- */
+
+    private Size mPreviewSize;
     private CameraDevice cameraDevice;
     private CaptureRequest.Builder previewBuilder;
     private CameraCaptureSession previewSession;
-    ImageButton switchCameraButton;
-    Button getpicture;
-    Button finish;
-    private static final int REQUEST_CAMERA = 1;
-    private static final int REQUEST_EXTERNAL_STORAGE = 1;
-    private static String[] PERMISSIONS_STORAGE = {
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-    };
     /**
      * A {@link Semaphore} to prevent the app from exiting before closing the camera.
      */
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
     final ConcurrentHashMap<String,Double> mImageScores = new ConcurrentHashMap<>();
-    private static String[] PERMISSIONS_CAMERA = {
-            Manifest.permission.CAMERA
-    };
+    /**
+     * An {@link ImageReader} that handles still image capture.
+     */
+    private ImageReader mImageReader;
+
+    /**
+     * Orientation of the camera sensor
+     */
+    private int mSensorOrientation;
+
+    private String cameraId;
+
+    private int cameraFace = CameraCharacteristics.LENS_FACING_BACK;
+
+    private boolean mTakePhoto = false;
+
+    /* ----- Constants ----- */
+
+    private static final int REQUEST_CAMERA = 1;
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static final SparseIntArray ORIENTATIONS=new SparseIntArray();
     static {
         ORIENTATIONS.append(Surface.ROTATION_0,90);
@@ -142,10 +172,7 @@ public class CameraActivity extends Activity {
      */
     private static final int MAX_PREVIEW_HEIGHT = 1080;
 
-    private String cameraId;
-
-    private int cameraFace = CameraCharacteristics.LENS_FACING_BACK;
-
+    /* ----- Thread Objects ----- */
 
     /**
      * An additional thread for running tasks that shouldn't block the UI.
@@ -157,27 +184,40 @@ public class CameraActivity extends Activity {
      */
     private Handler mBackgroundHandler;
 
-    /**
-     * An {@link ImageReader} that handles still image capture.
-     */
-    private ImageReader mImageReader;
-
-    /**
-     * Orientation of the camera sensor
-     */
-    private int mSensorOrientation;
-
     ExecutorService taskExecutor;
 
-    Detector<Face> safeDetector;
+    private Handler mHandler;
 
-    private OrientationEventListener orientationListener = null;
-    private boolean mTakePhoto = false;
+    private Runnable mAction = new Runnable() {
+        @Override public void run() {
+            mTakePhoto = true;
+            mHandler.postDelayed(this, 500);
+        }
+    };
+
+    private Runnable mFinish = new Runnable() {
+        @Override public void run() {
+            if (mHandler == null) return;
+            new PhotoProcessTask().execute();
+        }
+    };
+
+    /* ----- Permissions ----- */
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+    private static String[] PERMISSIONS_CAMERA = {
+            Manifest.permission.CAMERA
+    };
+
+    /* ----- Misc ----- */
+
+    Detector<Face> safeDetector;
 
     private TextureView.SurfaceTextureListener surfaceTextureListener=new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            orientationListener.enable();
             openCamera(width,height);
         }
         @Override
@@ -185,7 +225,6 @@ public class CameraActivity extends Activity {
         }
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-            orientationListener.disable();
             return false;
         }
         @Override
@@ -238,9 +277,10 @@ public class CameraActivity extends Activity {
             }
         });
 
+        loadingView = (ImageView) findViewById(R.id.loading);
+        loadingView.setBackgroundResource(R.drawable.loading_animation);
+        loadingAnimation = (AnimationDrawable) loadingView.getBackground();
         getpicture.setOnTouchListener(new View.OnTouchListener() {
-
-            private Handler mHandler;
 
             @Override public boolean onTouch(View v, MotionEvent event) {
                 switch(event.getAction()) {
@@ -248,45 +288,25 @@ public class CameraActivity extends Activity {
                         if (mHandler != null) return true;
                         mHandler = new Handler();
                         mHandler.post(mAction);
+                        mHandler.postDelayed(mFinish,5000);
                         break;
                     case MotionEvent.ACTION_UP:
                         if (mHandler == null) return true;
-                        mHandler.removeCallbacks(mAction);
-                        mHandler = null;
-                        taskExecutor.shutdown();
-                        try {
-                            taskExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        Intent intent = new Intent(CameraActivity.this, DemoActivity.class);
-                        intent.putExtra("image_scores",mImageScores);
-                        startActivity(intent);
-                        finish();
+                        new PhotoProcessTask().execute();
                         break;
                 }
                 return false;
             }
-
-            Runnable mAction = new Runnable() {
-                @Override public void run() {
-                    mTakePhoto = true;
-                    mHandler.postDelayed(this, 1000);
-                }
-            };
-
         });
-        orientationListener = new OrientationEventListener(this) {
-            public void onOrientationChanged(int orientation) {
-                configureTransform(textureView.getWidth(),textureView.getHeight());
-            }
-        };
+
         taskExecutor = Executors.newSingleThreadExecutor();
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        loadingView.setVisibility(View.GONE);
+        loadingAnimation.stop();
         startBackgroundThread();
         FaceDetector detector = new FaceDetector.Builder(getApplicationContext())
                 .setMode(FaceDetector.FAST_MODE)
@@ -294,7 +314,7 @@ public class CameraActivity extends Activity {
                 .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
                 .setTrackingEnabled(false)
                 .build();
-
+        taskExecutor = Executors.newSingleThreadExecutor();
         // This is a temporary workaround for a bug in the face detector with respect to operating
         // on very small images.  This will be fixed in a future release.  But in the near term, use
         // of the SafeFaceDetector class will patch the issue.
@@ -315,6 +335,8 @@ public class CameraActivity extends Activity {
         closeCamera();
         stopBackgroundThread();
         safeDetector.release();
+        safeDetector = null;
+        taskExecutor = null;
         super.onPause();
     }
 
@@ -475,8 +497,9 @@ public class CameraActivity extends Activity {
                     public void onImageAvailable(ImageReader reader) {
                         if (!mTakePhoto) {
                             if (reader != null) {
-                                Image image = reader.acquireNextImage();
-                                image.close();
+                                Image image = reader.acquireLatestImage();
+                                if(image != null)
+                                    image.close();
                             }
                             return;
                         }
@@ -493,7 +516,7 @@ public class CameraActivity extends Activity {
                     }
                 };
                 mImageReader = ImageReader.newInstance(largest.getWidth(),
-                        largest.getHeight(), ImageFormat.JPEG, 1);
+                        largest.getHeight(), ImageFormat.JPEG, 2);
                 mImageReader.setOnImageAvailableListener(imageAvailableListener, mBackgroundHandler);
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
@@ -769,6 +792,7 @@ public class CameraActivity extends Activity {
 
             mTaskExecutor.submit(new ImageAnalyzer(mFile.getAbsolutePath(),
                     mSafeDetector, mImageScores));
+            // TODO: 3/16/2017 Race condition
         }
     }
     /**
@@ -990,5 +1014,40 @@ public class CameraActivity extends Activity {
 
             return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
         }
+    }
+    private class PhotoProcessTask extends AsyncTask<Void, Void, String> {
+
+        @Override
+        protected String doInBackground(Void... params) {
+            mHandler.removeCallbacks(mAction);
+            mHandler.removeCallbacks(mFinish);
+            mHandler = null;
+            closeCamera();
+            taskExecutor.shutdown();
+            try {
+                taskExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return "Executed";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Intent intent = new Intent(CameraActivity.this, DemoActivity.class);
+            intent.putExtra("image_scores", mImageScores);
+            startActivity(intent);
+            loadingView.setVisibility(View.GONE);
+            loadingAnimation.stop();
+        }
+
+        @Override
+        protected void onPreExecute() {
+            loadingView.setVisibility(View.VISIBLE);
+            loadingAnimation.start();
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {}
     }
 }

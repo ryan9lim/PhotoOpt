@@ -90,8 +90,6 @@ public class DemoActivity extends Activity {
         backToCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(DemoActivity.this, CameraActivity.class);
-                startActivity(intent);
                 finish();
             }
         });
