@@ -505,8 +505,7 @@ public class CameraActivity extends Activity {
                         }
                         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmssSSS").format(new Date());
                         String imageFileName = "JPEG_" + timeStamp + ".jpg";
-                        File photo = new File(Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_DOWNLOADS), imageFileName);
+                        File photo = new File(getCacheDir(), imageFileName);
                         boolean faceFront = cameraFace == CameraCharacteristics.LENS_FACING_FRONT;
                         String currentPhotoPath = photo.getAbsolutePath();
                         mImageScores.put(currentPhotoPath,0.0);
@@ -1037,6 +1036,7 @@ public class CameraActivity extends Activity {
             Intent intent = new Intent(CameraActivity.this, DemoActivity.class);
             intent.putExtra("image_scores", mImageScores);
             startActivity(intent);
+            mImageScores.clear();
             loadingView.setVisibility(View.GONE);
             loadingAnimation.stop();
         }

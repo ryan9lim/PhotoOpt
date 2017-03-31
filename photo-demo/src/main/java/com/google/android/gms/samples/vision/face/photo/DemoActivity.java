@@ -36,20 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-
-import static android.R.attr.bitmap;
-import static android.os.Environment.DIRECTORY_DOWNLOADS;
-import static com.google.android.gms.vision.face.FaceDetector.ALL_CLASSIFICATIONS;
-import static com.google.android.gms.vision.face.Landmark.BOTTOM_MOUTH;
-import static com.google.android.gms.vision.face.Landmark.LEFT_CHEEK;
-import static com.google.android.gms.vision.face.Landmark.LEFT_EYE;
-import static com.google.android.gms.vision.face.Landmark.LEFT_MOUTH;
-import static com.google.android.gms.vision.face.Landmark.NOSE_BASE;
-import static com.google.android.gms.vision.face.Landmark.RIGHT_CHEEK;
-import static com.google.android.gms.vision.face.Landmark.RIGHT_EYE;
-import static com.google.android.gms.vision.face.Landmark.RIGHT_MOUTH;
 
 public class DemoActivity extends Activity {
     Map<String,Double> mImageScores;
@@ -72,7 +58,6 @@ public class DemoActivity extends Activity {
         String key = entry.getKey();
 
         Bitmap bitmap = null;
-        double sumscore = 0;
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = false;
@@ -148,19 +133,13 @@ public class DemoActivity extends Activity {
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(),
                 matrix, true);
     }
-    public double dist(Landmark one, Landmark two) {
-        if(one == null || two == null) {
-            return 0;
+
+    @Override
+    protected void onStop() {
+        for(Map.Entry<String,Double> entry : mImageScores.entrySet()){
+            File photo = new File(entry.getKey());
+            photo.delete();
         }
-
-        return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
-    }
-
-    public double dist(Landmark one, Landmark two, double[] means, int i) {
-        if(one == null || two == null) {
-            return means[i];
-        }
-
-        return Math.sqrt(Math.pow(one.getPosition().x - two.getPosition().x,2)+Math.pow(one.getPosition().y - two.getPosition().y,2));
+        super.onStop();
     }
 }
