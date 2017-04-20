@@ -11,3 +11,6 @@ https://github.com/ryan9lim/PhotoOpt/blob/master/photo-demo/src/main/java/com/go
 
 The photo demo activity
 https://github.com/ryan9lim/PhotoOpt/blob/master/photo-demo/src/main/java/com/google/android/gms/samples/vision/face/photo/DemoActivity.java
+
+Logo
+https://github.com/ryan9lim/PhotoOpt/blob/master/photo-demo/src/main/res/mipmap-xxxhdpi/ic_launcher.png
